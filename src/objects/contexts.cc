@@ -511,5 +511,20 @@ STATIC_ASSERT(NativeContext::kSize ==
               (Context::SizeFor(NativeContext::NATIVE_CONTEXT_SLOTS) +
                kSystemPointerSize));
 
+void NativeContext::RunPromiseHook(int type, Handle<JSPromise> promise,
+                                   Handle<Object> parent) {
+  Isolate* isolate = promise->GetIsolate();
+  Handle<Object> maybe_hook(isolate->native_context()->get(type), isolate);
+  if (!maybe_hook->IsJSFunction()) return;
+
+  Handle<JSFunction> hook = Handle<JSFunction>::cast(maybe_hook);
+
+  Handle<Object> argv[] = {Handle<Object>::cast(promise),
+                           Handle<Object>::cast(parent)};
+
+  Handle<Object> receiver = isolate->global_proxy();
+  Execution::Call(isolate, hook, receiver, arraysize(argv), argv).ToHandleChecked();
+}
+
 }  // namespace internal
 }  // namespace v8

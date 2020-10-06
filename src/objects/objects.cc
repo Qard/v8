@@ -5350,6 +5350,9 @@ Handle<Object> JSPromise::Reject(Handle<JSPromise> promise,
 
   if (isolate->debug()->is_active()) MoveMessageToPromise(isolate, promise);
 
+  isolate->native_context()
+         ->RunPromiseHook(Context::PROMISE_HOOK_RESOLVE_FUNCTION_INDEX, promise,
+                          isolate->factory()->undefined_value());
   if (debug_event) isolate->debug()->OnPromiseReject(promise, reason);
   isolate->RunPromiseHook(PromiseHookType::kResolve, promise,
                           isolate->factory()->undefined_value());
@@ -5387,6 +5390,9 @@ MaybeHandle<Object> JSPromise::Resolve(Handle<JSPromise> promise,
   DCHECK(
       !reinterpret_cast<v8::Isolate*>(isolate)->GetCurrentContext().IsEmpty());
 
+  isolate->native_context()
+         ->RunPromiseHook(Context::PROMISE_HOOK_RESOLVE_FUNCTION_INDEX,
+                          promise, isolate->factory()->undefined_value());
   isolate->RunPromiseHook(PromiseHookType::kResolve, promise,
                           isolate->factory()->undefined_value());
 

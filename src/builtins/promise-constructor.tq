@@ -73,6 +73,17 @@ PromiseConstructor(
     result = UnsafeCast<JSPromise>(
         FastNewObject(context, promiseFun, UnsafeCast<JSReceiver>(newTarget)));
     PromiseInit(result);
+
+    const promiseHookInit: JSAny =
+        *ContextSlot(context, ContextSlot::PROMISE_HOOK_INIT_FUNCTION_INDEX);
+
+    typeswitch (promiseHookInit) {
+      case (fn: Callable): {
+        Call(context, fn, Undefined, result, Undefined);
+      }
+      case (JSAny): deferred {}
+    }
+
     if (IsPromiseHookEnabledOrHasAsyncEventDelegate()) {
       runtime::PromiseHookInit(result, Undefined);
     }

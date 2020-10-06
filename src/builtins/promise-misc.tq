@@ -100,6 +100,20 @@ transitioning macro NewJSPromise(implicit context: Context)(parent: Object):
     JSPromise {
   const instance = InnerNewJSPromise();
   PromiseInit(instance);
+  const promiseHookInit: JSAny =
+      *NativeContextSlot(ContextSlot::PROMISE_HOOK_INIT_FUNCTION_INDEX);
+
+  typeswitch (promiseHookInit) {
+    case (fn: Callable): {
+      if (Is<JSPromise>(parent)) {
+        Call(context, fn, Undefined, instance, UnsafeCast<JSPromise>(parent));
+      } else {
+        Call(context, fn, Undefined, instance, Undefined);
+      }
+    }
+    case (JSAny): deferred {}
+  }
+
   if (IsPromiseHookEnabledOrHasAsyncEventDelegate()) {
     runtime::PromiseHookInit(instance, parent);
   }
@@ -124,6 +138,16 @@ transitioning macro NewJSPromise(implicit context: Context)(
   instance.reactions_or_result = result;
   instance.SetStatus(status);
   promise_internal::ZeroOutEmbedderOffsets(instance);
+
+  const promiseHookInit: JSAny =
+      *NativeContextSlot(ContextSlot::PROMISE_HOOK_INIT_FUNCTION_INDEX);
+
+  typeswitch (promiseHookInit) {
+    case (fn: Callable): {
+      Call(context, fn, Undefined, instance, Undefined);
+    }
+    case (JSAny): deferred {}
+  }
 
   if (IsPromiseHookEnabledOrHasAsyncEventDelegate()) {
     runtime::PromiseHookInit(instance, Undefined);

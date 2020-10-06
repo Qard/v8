@@ -765,6 +765,9 @@ RUNTIME_FUNCTION(Runtime_DebugAsyncFunctionEntered) {
   DCHECK_EQ(1, args.length());
   HandleScope scope(isolate);
   CONVERT_ARG_HANDLE_CHECKED(JSPromise, promise, 0);
+  isolate->native_context()->RunPromiseHook(
+      Context::PROMISE_HOOK_INIT_FUNCTION_INDEX, promise,
+      isolate->factory()->undefined_value());
   isolate->RunPromiseHook(PromiseHookType::kInit, promise,
                           isolate->factory()->undefined_value());
   if (isolate->debug()->is_active()) isolate->PushPromise(promise);

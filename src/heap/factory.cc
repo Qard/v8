@@ -3611,6 +3611,9 @@ Handle<JSPromise> Factory::NewJSPromiseWithoutHook() {
 
 Handle<JSPromise> Factory::NewJSPromise() {
   Handle<JSPromise> promise = NewJSPromiseWithoutHook();
+  isolate()->native_context()->RunPromiseHook(
+      Context::PROMISE_HOOK_INIT_FUNCTION_INDEX, promise,
+      undefined_value());
   isolate()->RunPromiseHook(PromiseHookType::kInit, promise, undefined_value());
   return promise;
 }

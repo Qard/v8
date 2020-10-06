@@ -16506,6 +16506,98 @@ TEST(PromiseHook) {
   isolate->SetPromiseHook(nullptr);
 }
 
+Local<Value> Get(const char* name) {
+  auto context = CcTest::isolate()->GetCurrentContext();
+  return CcTest::global()->Get(context, v8_str(name)).ToLocalChecked();
+}
+
+int64_t GetInteger(const char* name) {
+  auto context = CcTest::isolate()->GetCurrentContext();
+  return Get(name)->IntegerValue(context).ToChecked();
+}
+
+TEST(ContextPromiseHooks) {
+  LocalContext env;
+  v8::Isolate* isolate = env->GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  // v8::Local<v8::Object> global = CcTest::global();
+  v8::Local<v8::Context> context = CcTest::isolate()->GetCurrentContext();
+
+  CompileRun(
+      "parent = undefined;\n"
+      "init = undefined;\n"
+      "resolve = undefined;\n"
+      "before = undefined;\n"
+      "after = undefined;\n"
+      "initCount = 0;\n"
+      "beforeCount = 0;\n"
+      "afterCount = 0;\n"
+      "resolveCount = 0;\n"
+      "\n"
+      "function initHook(promise, _parent) {\n"
+      "  init = promise;\n"
+      "  parent = _parent;\n"
+      "  initCount++;\n"
+      "}\n"
+      "\n"
+      "function resolveHook(promise) {\n"
+      "  resolve = promise;\n"
+      "  resolveCount++;\n"
+      "}\n"
+      "\n"
+      "function beforeHook(promise) {\n"
+      "  console.log('before');\n"
+      "  before = promise;\n"
+      "  beforeCount++;\n"
+      "}\n"
+      "\n"
+      "function afterHook(promise) {\n"
+      "  console.log('after');\n"
+      "  after = promise;\n"
+      "  afterCount++;\n"
+      "}\n");
+
+
+  context->SetPromiseHooks(
+    Get("initHook"),
+    Get("beforeHook"),
+    Get("afterHook"),
+    Get("resolveHook")
+  );
+
+  CompileRun("var resolve, p = new Promise(r => resolve = r);\n");
+
+  CHECK_EQ(v8::Promise::kPending, GetPromise("init")->State());
+  CHECK_EQ(1, GetInteger("initCount"));
+  CHECK_EQ(0, GetInteger("beforeCount"));
+  CHECK_EQ(0, GetInteger("afterCount"));
+  CHECK_EQ(0, GetInteger("resolveCount"));
+  CHECK(Get("p")->Equals(env.local(), Get("init")).FromJust());
+  CHECK(Get("before")
+             ->Equals(env.local(), v8::Undefined(isolate))
+             .FromJust());
+
+  CompileRun("var p2 = p.then(() => {});\n");
+
+  CHECK_EQ(2, GetInteger("initCount"));
+  CHECK_EQ(0, GetInteger("beforeCount"));
+  CHECK_EQ(0, GetInteger("afterCount"));
+  CHECK_EQ(0, GetInteger("resolveCount"));
+  CHECK(Get("p2")->Equals(env.local(), Get("init")).FromJust());
+  CHECK(Get("p")->Equals(env.local(), Get("parent")).FromJust());
+
+  CompileRun("resolve();\n");
+
+  CHECK_EQ(v8::Promise::kFulfilled, GetPromise("init")->State());
+  CHECK_EQ(2, GetInteger("initCount"));
+  CHECK_EQ(1, GetInteger("beforeCount"));
+  CHECK_EQ(1, GetInteger("afterCount"));
+  CHECK_EQ(1, GetInteger("resolveCount"));
+  CHECK(Get("p2")->Equals(env.local(), Get("resolve")).FromJust());
+  CHECK(Get("p2")->Equals(env.local(), Get("before")).FromJust());
+  CHECK(Get("p2")->Equals(env.local(), Get("after")).FromJust());
+}
 
 TEST(EvalWithSourceURLInMessageScriptResourceNameOrSourceURL) {
   LocalContext context;

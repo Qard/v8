@@ -6216,6 +6216,43 @@ void Context::SetContinuationPreservedEmbedderData(Local<Value> data) {
       *i::Handle<i::HeapObject>::cast(Utils::OpenHandle(*data)));
 }
 
+void v8::Context::SetPromiseHooks(Local<Value> init_hook, Local<Value> before_hook,
+                       Local<Value> after_hook, Local<Value> resolve_hook) {
+  i::Handle<i::Context> context = Utils::OpenHandle(this);
+
+  i::Handle<i::Object> init_hook_obj = Utils::OpenHandle(*init_hook);
+  i::Handle<i::Object> before_hook_obj = Utils::OpenHandle(*before_hook);
+  i::Handle<i::Object> after_hook_obj = Utils::OpenHandle(*after_hook);
+  i::Handle<i::Object> resolve_hook_obj = Utils::OpenHandle(*resolve_hook);
+
+  i::Handle<i::JSFunction> init_hook_function = i::Handle<i::JSFunction>();
+  i::Handle<i::JSFunction> before_hook_function = i::Handle<i::JSFunction>();
+  i::Handle<i::JSFunction> after_hook_function = i::Handle<i::JSFunction>();
+  i::Handle<i::JSFunction> resolve_hook_function = i::Handle<i::JSFunction>();
+
+  if (init_hook_obj->IsJSFunction()) {
+    init_hook_function = i::Handle<i::JSFunction>::cast(init_hook_obj);
+  }
+  if (before_hook_obj->IsJSFunction()) {
+    before_hook_function = i::Handle<i::JSFunction>::cast(before_hook_obj);
+  }
+  if (after_hook_obj->IsJSFunction()) {
+    after_hook_function = i::Handle<i::JSFunction>::cast(after_hook_obj);
+  }
+  if (resolve_hook_obj->IsJSFunction()) {
+    resolve_hook_function = i::Handle<i::JSFunction>::cast(resolve_hook_obj);
+  }
+
+  context->native_context().set_promise_hook_init_function(
+    *init_hook_function);
+  context->native_context().set_promise_hook_before_function(
+    *before_hook_function);
+  context->native_context().set_promise_hook_after_function(
+    *after_hook_function);
+  context->native_context().set_promise_hook_resolve_function(
+    *resolve_hook_function);
+}
+
 MaybeLocal<Context> metrics::Recorder::GetContext(
     Isolate* isolate, metrics::Recorder::ContextId id) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);

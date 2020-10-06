@@ -10524,6 +10524,12 @@ class V8_EXPORT Context {
    */
   void SetContinuationPreservedEmbedderData(Local<Value> context);
 
+  // Set or clear hooks to be invoked for promise lifecycle operations.
+  // The individual hooks can be either undefined (to disable the
+  // emission) or some Function (to get notified).
+  void SetPromiseHooks(Local<Value> init_hook, Local<Value> before_hook,
+                       Local<Value> after_hook, Local<Value> resolve_hook);
+
   /**
    * Stack-allocated class which sets the execution context for all
    * operations executed within a local scope.
